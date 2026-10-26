@@ -1,0 +1,15 @@
+# Nunca subas secretos
+.totp_secret
+*secret*
+!totp.sh
+!decode_migration.py
+
+# Capturas de pantalla del QR
+*.png
+*.jpg
+*.jpeg
+
+# Ficheros con enlaces de exportación
+*migration*
+!decode_migration.py
+enlace*.txt
