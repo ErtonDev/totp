@@ -152,4 +152,4 @@ TOTP_SECRET_FILE=/another/path totp
 
 ## License
 
-Free to use.
+This project is released under the [MIT License](LICENSE).
