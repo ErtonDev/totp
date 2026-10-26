@@ -111,6 +111,29 @@ y vuelve a abrir la terminal. Después basta con escribir `totp` (o `totp -c`).
 
 En Ubuntu, `~/bin` solo se añade al `PATH` automáticamente si la carpeta ya existía al iniciar sesión, así que si la acabas de crear, cierra sesión y vuelve a entrar.
 
+Para comprobar que quedó bien instalado:
+
+```
+which totp
+```
+
+Debe mostrar la ruta `~/bin/totp` (por ejemplo, `/home/tu_usuario/bin/totp`). Si no muestra nada, `~/bin` no está en el `PATH`.
+
+#### Problemas habituales
+
+- **`totp: command not found`**: `~/bin` no está en el `PATH`. Añade la línea `export PATH=...` de arriba a tu `~/.bashrc` o `~/.zshrc`, y ejecuta `source ~/.bashrc` (o `source ~/.zshrc`), o abre una terminal nueva.
+- **`Permission denied`**: al script le falta el permiso de ejecución. Ejecuta `chmod +x ~/bin/totp`.
+
+#### Actualizar el script
+
+Si ya lo tenías instalado y descargas una versión nueva del repositorio, vuelve a copiarlo sobre el anterior (desde la carpeta del repositorio) y comprueba el permiso:
+
+```
+cp totp.sh ~/bin/totp && chmod +x ~/bin/totp
+```
+
+La clave en `~/.totp_secret` no se toca, así que no hace falta volver a guardarla.
+
 ### Otra ubicación para la clave
 
 Por defecto se lee `~/.totp_secret`. Puedes cambiarlo con la variable `TOTP_SECRET_FILE`:
