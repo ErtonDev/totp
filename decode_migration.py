@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Decodifica un enlace otpauth-migration:// (export de Google Authenticator)
-y muestra, para cada cuenta, la clave secreta en base32.
+"""Decode an otpauth-migration:// link (Google Authenticator export)
+and print the base32 secret key for each account.
 
-Uso:
+Usage:
     python3 decode_migration.py 'otpauth-migration://offline?data=...'
 
-Solo usa la librería estándar. Todo se procesa en local.
+Uses only the standard library. Everything is processed locally.
 """
 import sys
 import base64
@@ -13,6 +13,7 @@ import urllib.parse as up
 
 
 def varint(b, i):
+    """Read a protobuf varint from bytes b starting at index i."""
     n = s = 0
     while True:
         c = b[i]
@@ -24,6 +25,7 @@ def varint(b, i):
 
 
 def fields(b):
+    """Yield (field_number, value) pairs from a protobuf message."""
     i = 0
     while i < len(b):
         k, i = varint(b, i)
@@ -35,7 +37,7 @@ def fields(b):
             v = b[i:i + l]
             i += l
         else:
-            raise ValueError("formato inesperado")
+            raise ValueError("unexpected format")
         yield f, v
 
 
@@ -47,12 +49,14 @@ def main():
     data = up.parse_qs(up.urlparse(url).query)["data"][0].replace(" ", "+")
     raw = base64.b64decode(data + "=" * (-len(data) % 4))
 
+    # Field 1 holds one entry per exported account
     for f, v in fields(raw):
         if f != 1:
             continue
         name = issuer = secret = ""
         for g, w in fields(v):
             if g == 1:
+                # Raw secret bytes -> base32, which is what oathtool -b expects
                 secret = base64.b32encode(w).decode().rstrip("=")
             elif g == 2:
                 name = w.decode()

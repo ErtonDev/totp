@@ -1,155 +1,155 @@
 # totp
 
-Obtén tu código de 6 dígitos de Google Authenticator desde la terminal, sin mirar el móvil.
+Get your 6-digit Google Authenticator code from the terminal, without looking at your phone.
 
-Contiene dos scripts:
+It contains two scripts:
 
-- `totp.sh`: genera el código TOTP actual con `oathtool` y, opcionalmente, lo copia al portapapeles (`-c`). Es el mismo script para Linux y macOS.
-- `decode_migration.py`: extrae la clave secreta en base32 a partir del enlace `otpauth-migration://` que se obtiene al exportar cuentas desde Google Authenticator.
+- `totp.sh`: prints the current TOTP code using `oathtool` and, optionally, copies it to the clipboard (`-c`). It is the same script for Linux and macOS.
+- `decode_migration.py`: extracts the base32 secret key from the `otpauth-migration://` link you get when exporting accounts from Google Authenticator.
 
-> **Aviso de seguridad.** Guardar el segundo factor en el mismo ordenador donde inicias sesión reduce la protección que ofrece el 2FA, porque ya no depende de un dispositivo aparte. Hazlo solo si entiendes y aceptas ese riesgo. Quien tenga tu clave secreta puede generar tus códigos.
+> **Security warning.** Keeping your second factor on the same computer you log in from weakens the protection 2FA gives you, because it no longer depends on a separate device. Only do this if you understand and accept that risk. Anyone with your secret key can generate your codes.
 
-## Requisitos
+## Requirements
 
-El código es el mismo en ambos sistemas; solo cambia cómo se instalan las herramientas.
+The code is the same on both systems; only the way you install the tools changes.
 
-| Herramienta | Para qué | Ubuntu / Debian | macOS (Homebrew) |
+| Tool | Purpose | Ubuntu / Debian | macOS (Homebrew) |
 |---|---|---|---|
-| `oathtool` | Generar el código | `sudo apt install oathtool` | `brew install oath-toolkit` |
-| `zbarimg` | Leer el QR de una imagen | `sudo apt install zbar-tools` | `brew install zbar` |
-| Python 3 | Decodificar el enlace | Ya viene instalado | `brew install python` (o las herramientas de línea de comandos de Xcode) |
-| Portapapeles (solo para `totp -c`) | Copiar el código | Ver abajo | Nada: `pbcopy` ya viene incluido |
+| `oathtool` | Generate the code | `sudo apt install oathtool` | `brew install oath-toolkit` |
+| `zbarimg` | Read the QR code from an image | `sudo apt install zbar-tools` | `brew install zbar` |
+| Python 3 | Decode the link | Already installed | `brew install python` (or the Xcode command line tools) |
+| Clipboard (only for `totp -c`) | Copy the code | See below | Nothing: `pbcopy` is built in |
 
-### Portapapeles en Linux
+### Clipboard on Linux
 
-Para `totp -c` necesitas una herramienta que dependa de tu sesión gráfica. Comprueba cuál usas:
+`totp -c` needs a tool that depends on your graphical session. Check which one you use:
 
 ```
 echo $XDG_SESSION_TYPE
 ```
 
-- Si dice `wayland` (lo habitual en Ubuntu 22.04 y posteriores): `sudo apt install wl-clipboard`
-- Si dice `x11`: `sudo apt install xclip`
+- If it says `wayland` (the default on recent Ubuntu): `sudo apt install wl-clipboard`
+- If it says `x11`: `sudo apt install xclip`
 
-Si no estás seguro, instala las dos; el script elige la correcta. Sin sesión gráfica (por ejemplo, por SSH) no hay portapapeles al que copiar.
+If you are not sure, install both; the script picks the right one. Without a graphical session (for example over SSH) there is no clipboard to copy to.
 
-## 1. Obtener la clave secreta
+## 1. Get the secret key
 
-1. En Google Authenticator, usa **Transferir cuentas → Exportar cuentas** y genera el QR.
-2. Haz una captura de pantalla y pásala al ordenador.
-3. Extrae el enlace del QR:
+1. In Google Authenticator, use **Transfer accounts → Export accounts** and generate the QR code.
+2. Take a screenshot and move it to your computer.
+3. Extract the link from the QR code:
    ```
-   zbarimg captura.png
+   zbarimg screenshot.png
    ```
-   Verás algo como `QR-Code:otpauth-migration://offline?data=...`.
-4. Decodifícalo (con el enlace entre comillas simples):
+   You will see something like `QR-Code:otpauth-migration://offline?data=...`.
+4. Decode it (with the link in single quotes):
    ```
    python3 decode_migration.py 'otpauth-migration://offline?data=...'
    ```
-   Se imprime, por cada cuenta exportada, el emisor, el nombre y la clave en base32.
+   For each exported account it prints the issuer, the name and the base32 key.
 
-5. **Limpia los rastros**: borra la captura y el enlace, y quita la línea del historial del shell. El enlace contiene los secretos de *todas* las cuentas exportadas.
-   - **bash** (Ubuntu): `history | tail`, luego `history -d NÚMERO` y `history -w`.
-   - **zsh** (macOS): `history -d` no funciona igual; edita `~/.zsh_history`, borra la línea del enlace y cierra la terminal sin ejecutar más comandos.
+5. **Clean up the traces**: delete the screenshot and the link, and remove the line from your shell history. The link contains the secrets of *all* the exported accounts.
+   - **bash** (Ubuntu): `history | tail`, then `history -d NUMBER` and `history -w`.
+   - **zsh** (macOS): `history -d` does not work the same way; edit `~/.zsh_history`, delete the line with the link and close the terminal without running more commands.
 
-## 2. Guardar la clave en un fichero
+## 2. Store the key in a file
 
-Sin que quede en el historial ni en pantalla. La sintaxis de `read` cambia según el shell (macOS usa zsh por defecto):
+Without leaving it in your history or on screen. The `read` syntax depends on the shell (macOS uses zsh by default):
 
 **bash (Ubuntu):**
 
 ```
 umask 077
-read -rs -p "Clave: " S && printf '%s\n' "$S" > ~/.totp_secret; unset S; echo
+read -rs -p "Key: " S && printf '%s\n' "$S" > ~/.totp_secret; unset S; echo
 ```
 
 **zsh (macOS):**
 
 ```
 umask 077
-read -rs "S?Clave: " && printf '%s\n' "$S" > ~/.totp_secret; unset S; echo
+read -rs "S?Key: " && printf '%s\n' "$S" > ~/.totp_secret; unset S; echo
 ```
 
-El fichero debe tener permisos `600` (`ls -l ~/.totp_secret`).
+The file must have `600` permissions (`ls -l ~/.totp_secret`).
 
-## 3. Usar el script
+## 3. Use the script
 
 ```
 chmod +x totp.sh
 ./totp.sh
 ```
 
-Salida de ejemplo:
+Example output:
 
 ```
-123456  (válido 17s más)
+123456  (valid for 17s more)
 ```
 
-Comprueba que coincide con el código del móvil.
+Check that it matches the code on your phone.
 
-### Copiar el código al portapapeles
+### Copy the code to the clipboard
 
 ```
 ./totp.sh -c
 ```
 
-Muestra el código y además lo copia (consulta los requisitos de portapapeles más arriba). Ten en cuenta que el código se queda en el portapapeles hasta que copies otra cosa, y algunos gestores de portapapeles guardan historial.
+It prints the code and also copies it (see the clipboard requirements above). Note that the code stays in the clipboard until you copy something else, and some clipboard managers keep a history.
 
-### Ejecutarlo desde cualquier carpeta
+### Run it from any folder
 
 ```
 mkdir -p ~/bin && cp totp.sh ~/bin/totp
 ```
 
-Si `~/bin` no está en tu `PATH`, añade esta línea a `~/.bashrc` (Ubuntu) o a `~/.zshrc` (macOS):
+If `~/bin` is not in your `PATH`, add this line to `~/.bashrc` (Ubuntu) or `~/.zshrc` (macOS):
 
 ```
 export PATH="$HOME/bin:$PATH"
 ```
 
-y vuelve a abrir la terminal. Después basta con escribir `totp` (o `totp -c`).
+and open a new terminal. After that, just type `totp` (or `totp -c`).
 
-En Ubuntu, `~/bin` solo se añade al `PATH` automáticamente si la carpeta ya existía al iniciar sesión, así que si la acabas de crear, cierra sesión y vuelve a entrar.
+On Ubuntu, `~/bin` is only added to the `PATH` automatically if the folder already existed when you logged in, so if you have just created it, log out and log back in.
 
-Para comprobar que quedó bien instalado:
+To check that it is installed correctly:
 
 ```
 which totp
 ```
 
-Debe mostrar la ruta `~/bin/totp` (por ejemplo, `/home/tu_usuario/bin/totp`). Si no muestra nada, `~/bin` no está en el `PATH`.
+It should print the path `~/bin/totp` (for example, `/home/your_user/bin/totp`). If it prints nothing, `~/bin` is not in the `PATH`.
 
-#### Problemas habituales
+#### Common problems
 
-- **`totp: command not found`**: `~/bin` no está en el `PATH`. Añade la línea `export PATH=...` de arriba a tu `~/.bashrc` o `~/.zshrc`, y ejecuta `source ~/.bashrc` (o `source ~/.zshrc`), o abre una terminal nueva.
-- **`Permission denied`**: al script le falta el permiso de ejecución. Ejecuta `chmod +x ~/bin/totp`.
+- **`totp: command not found`**: `~/bin` is not in the `PATH`. Add the `export PATH=...` line above to your `~/.bashrc` or `~/.zshrc`, then run `source ~/.bashrc` (or `source ~/.zshrc`), or open a new terminal.
+- **`Permission denied`**: the script is missing the execute permission. Run `chmod +x ~/bin/totp`.
 
-#### Actualizar el script
+#### Updating the script
 
-Si ya lo tenías instalado y descargas una versión nueva del repositorio, vuelve a copiarlo sobre el anterior (desde la carpeta del repositorio) y comprueba el permiso:
+If you already had it installed and you download a newer version from the repository, copy it over the old one (from the repository folder) and check the permission:
 
 ```
 cp totp.sh ~/bin/totp && chmod +x ~/bin/totp
 ```
 
-La clave en `~/.totp_secret` no se toca, así que no hace falta volver a guardarla.
+The key in `~/.totp_secret` is not touched, so you do not need to store it again.
 
-### Otra ubicación para la clave
+### Another location for the key
 
-Por defecto se lee `~/.totp_secret`. Puedes cambiarlo con la variable `TOTP_SECRET_FILE`:
+By default `~/.totp_secret` is read. You can change it with the `TOTP_SECRET_FILE` variable:
 
 ```
-TOTP_SECRET_FILE=/ruta/otra totp
+TOTP_SECRET_FILE=/another/path totp
 ```
 
-## Qué hace `totp.sh`
+## What `totp.sh` does
 
-- Comprueba que `oathtool` está instalado y que el fichero de la clave se puede leer.
-- Avisa si el fichero no tiene permisos `600` o `400`.
-- Ignora espacios y saltos de línea en la clave.
-- Muestra el código y los segundos que le quedan.
-- Con `-c`, copia el código usando `pbcopy` (macOS), `wl-copy` (Wayland) o `xclip` (X11), según lo que encuentre.
+- Checks that `oathtool` is installed and that the key file can be read.
+- Warns if the file does not have `600` or `400` permissions.
+- Ignores whitespace and newlines in the key.
+- Prints the code and the seconds it has left.
+- With `-c`, copies the code using `pbcopy` (macOS), `wl-copy` (Wayland) or `xclip` (X11), whichever it finds.
 
-## Licencia
+## License
 
-Uso libre. Si añades una licencia al repositorio, indícala aquí.
+Free to use. If you add a license to the repository, mention it here.

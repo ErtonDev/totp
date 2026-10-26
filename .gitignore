@@ -1,15 +1,16 @@
-# Nunca subas secretos
+# Never commit secrets
 .totp_secret
 *secret*
 !totp.sh
 !decode_migration.py
 
-# Capturas de pantalla del QR
+# Screenshots of the QR code
 *.png
 *.jpg
 *.jpeg
 
-# Ficheros con enlaces de exportación
+# Files containing export links
 *migration*
 !decode_migration.py
 enlace*.txt
+link*.txt
