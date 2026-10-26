@@ -152,4 +152,4 @@ TOTP_SECRET_FILE=/another/path totp
 
 ## License
 
-Free to use. If you add a license to the repository, mention it here.
+Free to use.
